@@ -4,10 +4,13 @@ const schedule = require('node-schedule');
 const Shell = require('node-powershell');
 const greenGuy = 'http://localhost:8080';
 
+let installing = null;
+
 let buildTime = async ()=>{
-	let queue = JSON.parse(await request(greenGuy + '/getTestQueue'));
+	let queue = JSON.parse(await request(greenGuy + '/getTestQueue').catch(e=>console.log(e)));
 	console.log(queue);
 	let target;
+	if(installing) return console.log(`Ignoring queue, must finish installing ${installing}.`);
 	for(const q of queue){
 		if(target) continue;
 		if(q.dibs) continue;
@@ -24,12 +27,13 @@ let buildTime = async ()=>{
 	}
 	let data = await request(options).catch(e=>console.log(e));
 	fs.writeFileSync(pkgName,data);
+	installing = target.name;
 	try{
 		const ps = new Shell({
 			executionPolicy:'Bypass',
 			noProfile:true
 		});
-		ps.addCommand(`choco install --force -y ${pkgName}`);
+		ps.addCommand(`choco install --no-progress --force -y ${pkgName}`);
 		console.log(`Trying to install ${target.name}.`);
 		const result = await ps.invoke();
 		ps.dispose();
@@ -40,42 +44,11 @@ let buildTime = async ()=>{
 		sendReport(target.name,false,e,e);
 	}
 
-	//await Promise.all(queue.map( async q=>{
-	//	let name = q.name;
-	//	let version = q.version;
-	//	let pkgName =`${name}.${version}.nupkg`; 
-	//	if(q.dibs) return dontTest = true;
-	//	let dibsStatus = JSON.parse( await callDibs(name));
-	//	if(!dibsStatus.success) return dontTest = true;
-	//	const options = {
-	//		encoding:null,
-	//		url:`${greenGuy}/packages/${name}/${pkgName}`
-	//	}
-	//	let data = await request(options).catch(e=>console.log(e));
-	//	fs.writeFileSync(pkgName,data);
-	//}));
-	//if(dontTest) return;
-	//await Promise.all(queue.map(async q=>{
-	//	const pkgName =`${q.name}.${q.version}.nupkg`; 
-	//	try{
-	//		const ps = new Shell({
-	//			executionPolicy:'Bypass',
-	//			noProfile:true
-	//		});
-	//		ps.addCommand(`choco install --force -y ${pkgName}`);
-	//		const result = await ps.invoke();
-	//		ps.dispose();
-	//		let success = didInstall(result);
-	//		sendReport(q.name,success,null,result);
-	//	}catch(e){
-	//		console.log(e);
-	//		sendReport(q.name,false,e,e);
-	//	}
-	//}));
 	console.log('Done');
 
 }
 let sendReport = (name,success,error,result)=>{
+	installing = null;
 	console.log(result);
 	const options = {
 		method:'POST',
