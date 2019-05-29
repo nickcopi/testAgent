@@ -7,39 +7,71 @@ const greenGuy = 'http://localhost:8080';
 let buildTime = async ()=>{
 	let queue = JSON.parse(await request(greenGuy + '/getTestQueue'));
 	console.log(queue);
-	let dontTest = false;
-	await Promise.all(queue.map( async q=>{
-		let name = q.name;
-		let version = q.version;
-		let pkgName =`${name}.${version}.nupkg`; 
-		if(q.dibs) return dontTest = true;
-		let dibsStatus = JSON.parse( await callDibs(name));
-		if(!dibsStatus.success) return dontTest = true;
-		const options = {
-			encoding:null,
-			url:`${greenGuy}/packages/${name}/${pkgName}`
-		}
-		let data = await request(options).catch(e=>console.log(e));
-		fs.writeFileSync(pkgName,data);
-	}));
-	if(dontTest) return;
-	await Promise.all(queue.map(async q=>{
-		const pkgName =`${q.name}.${q.version}.nupkg`; 
-		try{
-			const ps = new Shell({
-				executionPolicy:'Bypass',
-				noProfile:true
-			});
-			ps.addCommand(`choco install --force -y ${pkgName}`);
-			const result = await ps.invoke();
-			ps.dispose();
-			let success = didInstall(result);
-			sendReport(q.name,success,null,result);
-		}catch(e){
-			console.log(e);
-			sendReport(q.name,false,e,e);
-		}
-	}));
+	let target;
+	for(const q of queue){
+		if(target) continue;
+		if(q.dibs) continue;
+		const dibsStatus = JSON.parse(await callDibs(q.name));
+		if(!dibsStatus.success) continue;
+		target = q;
+	}
+	if(!target) return;
+	console.log(target);
+	const pkgName =`${target.name}.${target.version}.nupkg`; 
+	const options = {
+		encoding:null,
+		url:`${greenGuy}/packages/${target.name}/${pkgName}`
+	}
+	let data = await request(options).catch(e=>console.log(e));
+	fs.writeFileSync(pkgName,data);
+	try{
+		const ps = new Shell({
+			executionPolicy:'Bypass',
+			noProfile:true
+		});
+		ps.addCommand(`choco install --force -y ${pkgName}`);
+		console.log(`Trying to install ${target.name}.`);
+		const result = await ps.invoke();
+		ps.dispose();
+		let success = didInstall(result);
+		sendReport(target.name,success,null,result);
+	}catch(e){
+		console.log(e);
+		sendReport(target.name,false,e,e);
+	}
+
+	//await Promise.all(queue.map( async q=>{
+	//	let name = q.name;
+	//	let version = q.version;
+	//	let pkgName =`${name}.${version}.nupkg`; 
+	//	if(q.dibs) return dontTest = true;
+	//	let dibsStatus = JSON.parse( await callDibs(name));
+	//	if(!dibsStatus.success) return dontTest = true;
+	//	const options = {
+	//		encoding:null,
+	//		url:`${greenGuy}/packages/${name}/${pkgName}`
+	//	}
+	//	let data = await request(options).catch(e=>console.log(e));
+	//	fs.writeFileSync(pkgName,data);
+	//}));
+	//if(dontTest) return;
+	//await Promise.all(queue.map(async q=>{
+	//	const pkgName =`${q.name}.${q.version}.nupkg`; 
+	//	try{
+	//		const ps = new Shell({
+	//			executionPolicy:'Bypass',
+	//			noProfile:true
+	//		});
+	//		ps.addCommand(`choco install --force -y ${pkgName}`);
+	//		const result = await ps.invoke();
+	//		ps.dispose();
+	//		let success = didInstall(result);
+	//		sendReport(q.name,success,null,result);
+	//	}catch(e){
+	//		console.log(e);
+	//		sendReport(q.name,false,e,e);
+	//	}
+	//}));
 	console.log('Done');
 
 }
@@ -58,7 +90,7 @@ let sendReport = (name,success,error,result)=>{
 			result
 		})
 	}
-	request(options);
+	request(options).catch(e=>console.log(e));
 }
 let didInstall = result=>{
 	let success = false;
@@ -75,6 +107,7 @@ let didInstall = result=>{
 	return success;
 }
 let callDibs = async name =>{
+	console.log('calling dibs on ' + name);
 	const options = {
 		method:'POST',
 		url:greenGuy + '/agentDibs',
@@ -85,9 +118,9 @@ let callDibs = async name =>{
 			name,
 		})
 	}
-	let res = await request(options);
+	let res = await request(options).catch(e=>console.log(e));
 	return res;
-	
+
 
 }
 let startSchedule = ()=>{
