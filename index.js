@@ -43,8 +43,8 @@ let buildTime = async ()=>{
 		console.log(e);
 		sendReport(target.name,false,e,e);
 	}
-
 	console.log('Done');
+	buildTime();
 
 }
 let sendReport = (name,success,error,result)=>{
