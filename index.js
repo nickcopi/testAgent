@@ -24,6 +24,7 @@ let buildTime = async ()=>{
 	}
 	if(!target) return;
 	console.log(target);
+	installing = target.name;
 	const pkgName =`${target.name}.${target.version}.nupkg`; 
 	const options = {
 		encoding:null,
@@ -32,13 +33,11 @@ let buildTime = async ()=>{
 	let data = await request(options).catch(e=>console.log(e));
 	mkdirp.sync(pkgPath);
 	fs.writeFileSync(pkgPath + pkgName,data);
-	installing = target.name;
 	try{
 		const ps = new Shell({
 			executionPolicy:'Bypass',
 			noProfile:true
 		});
-		console.log(`choco install --no-progress --force -y packages\\${pkgName}`);
 		ps.addCommand(`choco install --no-progress --force -y packages\\${pkgName}`);
 		console.log(`Trying to install ${target.name}.`);
 		const result = await ps.invoke();
@@ -88,6 +87,7 @@ let didInstall = result=>{
 }
 let callDibs = async name =>{
 	console.log('calling dibs on ' + name);
+	if(installing) console.log('Stop being dumb, im installing');
 	const options = {
 		method:'POST',
 		url:greenGuy + '/agentDibs',
