@@ -3,10 +3,12 @@ const fs = require('fs');
 const schedule = require('node-schedule');
 const Shell = require('node-powershell');
 const greenGuy = 'http://localhost:8080';
+const mkdirp = require('mkdirp');
 
 let installing = null;
 
 let buildTime = async ()=>{
+	const pkgPath = `${__dirname}/packages/`;
 	let queue = JSON.parse(await request(greenGuy + '/getTestQueue').catch(e=>console.log(e)));
 	console.log(queue);
 	let target;
@@ -26,7 +28,8 @@ let buildTime = async ()=>{
 		url:`${greenGuy}/packages/${target.name}/${pkgName}`
 	}
 	let data = await request(options).catch(e=>console.log(e));
-	fs.writeFileSync(pkgName,data);
+	mkdirp.sync(pkgPath);
+	fs.writeFileSync(pkgPath + pkgName,data);
 	installing = target.name;
 	try{
 		const ps = new Shell({
