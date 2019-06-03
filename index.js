@@ -4,6 +4,8 @@ const schedule = require('node-schedule');
 const Shell = require('node-powershell');
 const greenGuy = 'http://localhost:8080';
 const mkdirp = require('mkdirp');
+const os = require('os');
+const hostname = os.hostname();
 
 let installing = null;
 
@@ -36,7 +38,8 @@ let buildTime = async ()=>{
 			executionPolicy:'Bypass',
 			noProfile:true
 		});
-		ps.addCommand(`choco install --no-progress --force -y ${pkgName}`);
+		console.log(`choco install --no-progress --force -y packages\\${pkgName}`);
+		ps.addCommand(`choco install --no-progress --force -y packages\\${pkgName}`);
 		console.log(`Trying to install ${target.name}.`);
 		const result = await ps.invoke();
 		ps.dispose();
@@ -63,7 +66,8 @@ let sendReport = (name,success,error,result)=>{
 			error,
 			success,
 			name,
-			result
+			result,
+			hostname
 		})
 	}
 	request(options).catch(e=>console.log(e));
