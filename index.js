@@ -8,8 +8,11 @@ const os = require('os');
 const hostname = os.hostname();
 
 let installing = null;
+let figuringOutInstall = false;
 
 let buildTime = async ()=>{
+	if(figuringOutInstall) return;
+	figuringOutInstall = true;
 	const pkgPath = `${__dirname}/packages/`;
 	let queue = JSON.parse(await request(greenGuy + '/getTestQueue').catch(e=>console.log(e)));
 	console.log(queue);
@@ -54,6 +57,7 @@ let buildTime = async ()=>{
 }
 let sendReport = (name,success,error,result)=>{
 	installing = null;
+	figuringOutInstall = true;
 	console.log(result);
 	const options = {
 		method:'POST',
