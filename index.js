@@ -96,6 +96,7 @@ let callDibs = async name =>{
 		},
 		body:JSON.stringify({
 			name,
+			hostname
 		})
 	}
 	let res = await request(options).catch(e=>console.log(e));
