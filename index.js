@@ -56,7 +56,7 @@ let buildTime = async ()=>{
 }
 let sendReport = (name,success,error,result)=>{
 	installing = null;
-	figuringOutInstall = true;
+	figuringOutInstall = false;
 	console.log(result);
 	const options = {
 		method:'POST',
