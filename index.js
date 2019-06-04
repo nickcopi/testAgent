@@ -1,8 +1,7 @@
 const request = require('request-promise');
 const fs = require('fs');
-const schedule = require('node-schedule');
 const Shell = require('node-powershell');
-const greenGuy = 'http://localhost:8080';
+const greenGuy = process.env.greenGuy || 'http://localhost:8080';
 const mkdirp = require('mkdirp');
 const os = require('os');
 const hostname = os.hostname();
@@ -11,7 +10,7 @@ let installing = null;
 let figuringOutInstall = false;
 
 let buildTime = async ()=>{
-	if(figuringOutInstall) return;
+	if(figuringOutInstall) return console.log('Figuring out install...');
 	figuringOutInstall = true;
 	const pkgPath = `${__dirname}/packages/`;
 	let queue = JSON.parse(await request(greenGuy + '/getTestQueue').catch(e=>console.log(e)));
@@ -25,7 +24,7 @@ let buildTime = async ()=>{
 		if(!dibsStatus.success) continue;
 		target = q;
 	}
-	if(!target) return;
+	if(!target) return figuringOutInstall = false;
 	console.log(target);
 	installing = target.name;
 	const pkgName =`${target.name}.${target.version}.nupkg`; 
@@ -109,9 +108,9 @@ let callDibs = async name =>{
 
 }
 let startSchedule = ()=>{
-	schedule.scheduleJob('* * * * *',()=>{
+	setInterval(()=>{
 		buildTime();
-	});
+	},1000 * 60);
 };
 buildTime();
 startSchedule();
