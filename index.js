@@ -10,7 +10,7 @@ let installing = null;
 let figuringOutInstall = false;
 
 let buildTime = async ()=>{
-	if(figuringOutInstall) return console.log('Figuring out install...');
+	if(figuringOutInstall) return console.log('Figuring out install ' + (installing?`of ${installing}`:'...'));
 	figuringOutInstall = true;
 	const pkgPath = `${__dirname}/packages/`;
 	let queue = JSON.parse(await request(greenGuy + '/getTestQueue').catch(e=>console.log(e)));
